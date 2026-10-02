@@ -33,6 +33,7 @@ const register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profilePhoto: user.profilePhoto || null,
         token,
       },
     });
@@ -63,6 +64,7 @@ const login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profilePhoto: user.profilePhoto || null,
         token,
       },
     });

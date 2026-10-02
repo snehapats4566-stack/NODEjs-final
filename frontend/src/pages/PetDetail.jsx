@@ -6,8 +6,12 @@ import AdoptionModal from '../components/AdoptionModal';
 import { ArrowLeft, Heart, Calendar, Tag, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000';
+const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5050';
 const SPECIES_EMOJI = { dog: '🐕', cat: '🐈', bird: '🦜', rabbit: '🐇', other: '🐾' };
+const getPetPhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  return /^https?:\/\//i.test(photoPath) ? photoPath : `${UPLOADS_URL}/${photoPath}`;
+};
 
 export default function PetDetail() {
   const { id } = useParams();
@@ -61,7 +65,7 @@ export default function PetDetail() {
   if (loading) return <div className="page-loader"><div className="spinner" /></div>;
   if (!pet) return null;
 
-  const photoUrl = pet.photoPath ? `${UPLOADS_URL}/${pet.photoPath}` : null;
+  const photoUrl = getPetPhotoUrl(pet.photoPath);
 
   return (
     <div className="container">

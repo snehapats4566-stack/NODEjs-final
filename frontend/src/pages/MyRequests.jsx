@@ -9,7 +9,11 @@ const STATUS_COLOR = {
   rejected: 'status-adopted',
 };
 
-const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000';
+const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5050';
+const getPetPhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  return /^https?:\/\//i.test(photoPath) ? photoPath : `${UPLOADS_URL}/${photoPath}`;
+};
 
 export default function MyRequests() {
   const [requests, setRequests] = useState([]);
@@ -45,7 +49,7 @@ export default function MyRequests() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {requests.map(req => {
-            const photoUrl = req.pet?.photoPath ? `${UPLOADS_URL}/${req.pet.photoPath}` : null;
+            const photoUrl = getPetPhotoUrl(req.pet?.photoPath);
             return (
               <div key={req._id} className={`card request-card ${req.status}`}>
                 <div className="card-body" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>

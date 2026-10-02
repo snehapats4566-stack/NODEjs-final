@@ -37,10 +37,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  // Update user data in state + localStorage (e.g. after profile photo change)
+  const updateUser = useCallback((updates) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updates };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
   const isAdmin = user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

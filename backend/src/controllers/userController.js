@@ -2,6 +2,12 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 
+// Helper: build a URL-safe relative path from a file path like "uploads/profile-images/abc.jpg"
+const toRelativeUrl = (filePath) => {
+  // Normalize slashes and strip any leading "./" or ".\"
+  return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
+};
+
 // @desc    Get current user profile
 // @route   GET /api/profile
 // @access  Private
@@ -22,44 +28,49 @@ const getMyProfile = async (req, res, next) => {
 // @access  Private
 const updateMyProfile = async (req, res, next) => {
   try {
-    const { name, email, role, password, profilePhoto, gallery, ...profileFields } = req.body;
-    
-    // Do not allow updating sensitive fields or gallery/photo directly here
+    // Destructure out fields that must NOT be set through this endpoint
+    const { email, role, password, profilePhoto, gallery, ...profileFields } = req.body;
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { $set: { ...profileFields, name } },
+      { $set: profileFields },
       { new: true, runValidators: true }
     );
-    
+
     res.status(200).json({ success: true, data: updatedUser });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Upload profile photo
+// @desc    Upload / replace profile photo
 // @route   POST /api/profile/photo
 // @access  Private
 const uploadProfilePhoto = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload an image' });
+      return res.status(400).json({ success: false, message: 'Please upload an image file (jpg, png, webp).' });
     }
 
     const user = await User.findById(req.user.id);
-    
-    // Delete old photo if it exists
+
+    // Delete old profile photo from disk if it exists
     if (user.profilePhoto) {
-      const oldPhotoPath = path.join(process.cwd(), user.profilePhoto);
-      if (fs.existsSync(oldPhotoPath)) {
-        fs.unlinkSync(oldPhotoPath);
+      const oldPath = path.join(process.cwd(), user.profilePhoto);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
       }
     }
 
-    user.profilePhoto = req.file.path.replace(/\\/g, '/'); // Normalize path for windows
+    // Store the relative path e.g. "uploads/profile-images/profile-1234.jpg"
+    user.profilePhoto = toRelativeUrl(req.file.path);
     await user.save();
 
-    res.status(200).json({ success: true, data: user.profilePhoto, message: 'Profile photo updated' });
+    res.status(200).json({
+      success: true,
+      data: { profilePhoto: user.profilePhoto },
+      message: 'Profile photo updated successfully',
+    });
   } catch (error) {
     next(error);
   }
@@ -71,11 +82,11 @@ const uploadProfilePhoto = async (req, res, next) => {
 const deleteProfilePhoto = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (user.profilePhoto) {
-      const oldPhotoPath = path.join(process.cwd(), user.profilePhoto);
-      if (fs.existsSync(oldPhotoPath)) {
-        fs.unlinkSync(oldPhotoPath);
+      const oldPath = path.join(process.cwd(), user.profilePhoto);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
       }
       user.profilePhoto = null;
       await user.save();
@@ -97,9 +108,9 @@ const uploadGalleryPhotos = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user.id);
-    
-    const newPhotos = req.files.map(file => file.path.replace(/\\/g, '/'));
-    
+
+    const newPhotos = req.files.map(file => toRelativeUrl(file.path));
+
     // Limit gallery to max 10 photos
     if (user.gallery.length + newPhotos.length > 10) {
       return res.status(400).json({ success: false, message: 'Gallery cannot exceed 10 photos' });
@@ -120,11 +131,9 @@ const uploadGalleryPhotos = async (req, res, next) => {
 const deleteGalleryPhoto = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    
-    // We pass the index or filename in photoId. Let's assume it's the index or we pass URL encoded path.
-    // For simplicity, let's pass an index.
+
     const index = parseInt(req.params.photoId, 10);
-    
+
     if (isNaN(index) || index < 0 || index >= user.gallery.length) {
       return res.status(400).json({ success: false, message: 'Invalid photo index' });
     }
@@ -134,7 +143,7 @@ const deleteGalleryPhoto = async (req, res, next) => {
     if (fs.existsSync(absolutePath)) {
       fs.unlinkSync(absolutePath);
     }
-    
+
     user.gallery.splice(index, 1);
     await user.save();
 
@@ -149,11 +158,10 @@ const deleteGalleryPhoto = async (req, res, next) => {
 // @access  Private
 const getPublicProfiles = async (req, res, next) => {
   try {
-    // Return only non-sensitive data
     const users = await User.find({})
       .select('name profilePhoto city state country bio preferredSpecies gallery createdAt role')
       .sort({ createdAt: -1 });
-      
+
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error) {
     next(error);
@@ -166,12 +174,12 @@ const getPublicProfiles = async (req, res, next) => {
 const getPublicProfileById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'Profile not found' });
     }
-    
-    // Construct safe user object
+
+    // Construct safe user object — never expose password, role secrets, etc.
     const publicData = {
       _id: user._id,
       name: user.name,
@@ -199,7 +207,7 @@ const getPublicProfileById = async (req, res, next) => {
       householdSize: user.householdSize,
       careAvailability: user.careAvailability,
       preferredLocation: user.preferredLocation,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
     };
 
     if (user.showEmail) publicData.email = user.email;
@@ -219,5 +227,5 @@ module.exports = {
   uploadGalleryPhotos,
   deleteGalleryPhoto,
   getPublicProfiles,
-  getPublicProfileById
+  getPublicProfileById,
 };

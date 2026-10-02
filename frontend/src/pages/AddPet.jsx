@@ -4,6 +4,12 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { Upload, ArrowLeft } from 'lucide-react';
 
+const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5050';
+const getPetPhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  return /^https?:\/\//i.test(photoPath) ? photoPath : `${UPLOADS_URL}/${photoPath}`;
+};
+
 export default function AddPet() {
   const { id } = useParams(); // present when editing
   const navigate = useNavigate();
@@ -24,7 +30,7 @@ export default function AddPet() {
         .then(({ data }) => {
           const p = data.data;
           setForm({ name: p.name, breed: p.breed, age: p.age, species: p.species, gender: p.gender, description: p.description || '' });
-          if (p.photoPath) setPreview(`${import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000'}/${p.photoPath}`);
+          if (p.photoPath) setPreview(getPetPhotoUrl(p.photoPath));
         })
         .catch(() => toast.error('Failed to load pet'))
         .finally(() => setLoading(false));

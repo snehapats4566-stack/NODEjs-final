@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 
-const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000';
+const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5050';
 
 const SPECIES_EMOJI = { dog: '🐕', cat: '🐈', bird: '🦜', rabbit: '🐇', other: '🐾' };
+const getPetPhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  return /^https?:\/\//i.test(photoPath) ? photoPath : `${UPLOADS_URL}/${photoPath}`;
+};
 
 export default function PetCard({ pet }) {
   const navigate = useNavigate();
 
-  const photoUrl = pet.photoPath ? `${UPLOADS_URL}/${pet.photoPath}` : null;
+  const photoUrl = getPetPhotoUrl(pet.photoPath);
 
   return (
     <div className="card pet-card" onClick={() => navigate(`/pets/${pet._id}`)}>

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../config/multer');
+const { profileUpload } = require('../config/multer');
 const { protect } = require('../middleware/auth');
 const {
   getMyProfile,
@@ -10,34 +11,24 @@ const {
   uploadGalleryPhotos,
   deleteGalleryPhoto,
   getPublicProfiles,
-  getPublicProfileById
+  getPublicProfileById,
 } = require('../controllers/userController');
 
-// All profile routes require authentication
-router.use(protect);
+// Current user profile (all protected)
+router.route('/profile').get(protect, getMyProfile).put(protect, updateMyProfile);
 
-// Current user profile routes
-router.route('/profile')
-  .get(getMyProfile)
-  .put(updateMyProfile);
+// Profile photo (protected, uses profileUpload for uploads/profile-images/)
+router
+  .route('/profile/photo')
+  .post(protect, profileUpload.single('photo'), uploadProfilePhoto)
+  .delete(protect, deleteProfilePhoto);
 
-// Profile photo routes
-router.route('/profile/photo')
-  .post(upload.single('photo'), uploadProfilePhoto)
-  .delete(deleteProfilePhoto);
+// Gallery (protected, uses profileUpload)
+router.route('/profile/gallery').post(protect, profileUpload.array('photos', 5), uploadGalleryPhotos);
+router.route('/profile/gallery/:photoId').delete(protect, deleteGalleryPhoto);
 
-// Gallery routes
-router.route('/profile/gallery')
-  .post(upload.array('photos', 5), uploadGalleryPhotos); // Max 5 at a time
-
-router.route('/profile/gallery/:photoId')
-  .delete(deleteGalleryPhoto);
-
-// Public user directories
-router.route('/users')
-  .get(getPublicProfiles);
-
-router.route('/users/:id')
-  .get(getPublicProfileById);
+// Public user directory (protected — only logged-in users can browse)
+router.route('/users').get(protect, getPublicProfiles);
+router.route('/users/:id').get(protect, getPublicProfileById);
 
 module.exports = router;

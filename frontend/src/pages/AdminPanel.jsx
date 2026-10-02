@@ -4,7 +4,11 @@ import { Check, CheckCircle2, ClipboardList, Clock3, House, MapPin, PawPrint, Pe
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
-const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000';
+const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5050';
+const getPetPhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  return /^https?:\/\//i.test(photoPath) ? photoPath : `${UPLOADS_URL}/${photoPath}`;
+};
 
 export default function AdminPanel() {
   const [tab, setTab] = useState('pets'); // 'pets' | 'requests'
@@ -122,7 +126,7 @@ export default function AdminPanel() {
           {pets.length === 0 ? (
             <div className="empty-state"><div className="empty-icon"><PawPrint className="admin-empty-icon" aria-hidden="true" /></div><h3>No pets listed yet</h3></div>
           ) : pets.map(pet => {
-            const photoUrl = pet.photoPath ? `${UPLOADS_URL}/${pet.photoPath}` : null;
+            const photoUrl = getPetPhotoUrl(pet.photoPath);
             return (
               <div key={pet._id} className="card">
                 <div style={{ height: '160px', overflow: 'hidden', background: 'var(--bg-card2)', position: 'relative' }}>
