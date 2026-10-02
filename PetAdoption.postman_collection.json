@@ -1,0 +1,286 @@
+{
+  "info": {
+    "name": "Pet Adoption Platform API",
+    "description": "Complete API collection for the Pet Adoption Platform. Set the {{base_url}} variable to http://localhost:5000/api and {{token}} to your JWT after login.",
+    "_postman_id": "pet-adoption-api-v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" },
+    { "key": "pet_id", "value": "" },
+    { "key": "request_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Shelter Admin\",\n  \"email\": \"admin@shelter.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\",\n  \"adminSecret\": \"YOUR_ADMIN_SECRET\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  console.log('Token saved:', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@shelter.com\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pets",
+      "item": [
+        {
+          "name": "Get All Pets (Available)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pets?status=available",
+              "host": ["{{base_url}}"],
+              "path": ["pets"],
+              "query": [{ "key": "status", "value": "available" }]
+            }
+          }
+        },
+        {
+          "name": "Get All Pets (All statuses)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/pets"
+          }
+        },
+        {
+          "name": "Get All Pets (Filter by species)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pets?status=available&species=dog&page=1&limit=6",
+              "host": ["{{base_url}}"],
+              "path": ["pets"],
+              "query": [
+                { "key": "status", "value": "available" },
+                { "key": "species", "value": "dog" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "6" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Pet by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/pets/{{pet_id}}"
+          }
+        },
+        {
+          "name": "Create Pet (Admin - with photo)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/pets",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Buddy", "type": "text" },
+                { "key": "breed", "value": "Golden Retriever", "type": "text" },
+                { "key": "age", "value": "3", "type": "text" },
+                { "key": "species", "value": "dog", "type": "text" },
+                { "key": "gender", "value": "male", "type": "text" },
+                { "key": "description", "value": "Friendly and energetic dog who loves to play fetch.", "type": "text" },
+                { "key": "photo", "type": "file", "src": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Pet (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/pets/{{pet_id}}",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Buddy Updated", "type": "text" },
+                { "key": "description", "value": "Updated description", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Pet Status → Adopted (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/pets/{{pet_id}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"adopted\" }"
+            }
+          }
+        },
+        {
+          "name": "Update Pet Status → Available (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/pets/{{pet_id}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"available\" }"
+            }
+          }
+        },
+        {
+          "name": "Delete Pet (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/pets/{{pet_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adoption Requests",
+      "item": [
+        {
+          "name": "Submit Adoption Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/adoption-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{pet_id}}\",\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+1 555 123 4567\",\n  \"address\": \"123 Oak Street, Springfield, IL 62701\",\n  \"reason\": \"I have always loved dogs and have a large backyard where Buddy can run and play freely. I work from home so he won't be left alone.\",\n  \"hasOtherPets\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Requests (User)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/adoption-requests"
+          }
+        },
+        {
+          "name": "Get All Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/adoption-requests"
+          }
+        },
+        {
+          "name": "Get Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/adoption-requests/{{request_id}}"
+          }
+        },
+        {
+          "name": "Approve Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/adoption-requests/{{request_id}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"approved\" }"
+            }
+          }
+        },
+        {
+          "name": "Reject Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/adoption-requests/{{request_id}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"rejected\" }"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "API Health",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          }
+        }
+      ]
+    }
+  ]
+}
